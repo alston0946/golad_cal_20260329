@@ -42,12 +42,17 @@ if "detail_history" not in st.session_state:
 # -----------------------------
 # 固定参数
 # -----------------------------
-SALES_SHIPPING = 15
-COST_SHIPPING = 20
+SALES_SHIPPING = 20
+COST_SHIPPING = 13
 SALES_CERT_FEE = 5
 COST_CERT_FEE = 4
 COST_LABOR_PER_G = 20
 TAX_RATE_PERCENT = 8.0
+
+
+
+
+
 
 SILVER_CHAIN_COST = 33
 SILVER_CHAIN_SALE = 59
