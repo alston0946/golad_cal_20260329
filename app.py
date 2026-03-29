@@ -3,7 +3,60 @@ import json
 import os
 import pandas as pd
 
-st.set_page_config(page_title="金饰利润计算", page_icon="💰", layout="centered")
+st.set_page_config(
+    page_title="金饰利润计算",
+    page_icon="💰",
+    layout="centered",
+    initial_sidebar_state="collapsed"
+)
+
+# -----------------------------
+# 轻量样式：更适合手机端
+# -----------------------------
+st.markdown("""
+<style>
+.block-container {
+    padding-top: 1rem;
+    padding-bottom: 1.2rem;
+    padding-left: 0.9rem;
+    padding-right: 0.9rem;
+    max-width: 720px;
+}
+
+h4, h5, h6 {
+    margin-top: 0.2rem !important;
+    margin-bottom: 0.4rem !important;
+}
+
+p, div, label {
+    font-size: 0.95rem !important;
+}
+
+[data-testid="stMetricValue"] {
+    font-size: 1.2rem !important;
+}
+
+[data-testid="stMetricLabel"] {
+    font-size: 0.85rem !important;
+}
+
+.stButton > button,
+.stDownloadButton > button {
+    border-radius: 10px;
+    padding: 0.45rem 0.8rem;
+    font-size: 0.92rem;
+}
+
+[data-testid="stExpander"] {
+    border-radius: 10px;
+}
+
+hr {
+    margin-top: 0.8rem !important;
+    margin-bottom: 0.8rem !important;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # -----------------------------
 # 历史记录文件
@@ -42,17 +95,12 @@ if "detail_history" not in st.session_state:
 # -----------------------------
 # 固定参数
 # -----------------------------
-SALES_SHIPPING = 20
-COST_SHIPPING = 13
+SALES_SHIPPING = 20          # 销售运费
+COST_SHIPPING = 13           # 成本运费
 SALES_CERT_FEE = 5
 COST_CERT_FEE = 4
 COST_LABOR_PER_G = 20
 TAX_RATE_PERCENT = 8.0
-
-
-
-
-
 
 SILVER_CHAIN_COST = 33
 SILVER_CHAIN_SALE = 59
@@ -70,32 +118,22 @@ st.markdown("#### 金饰利润计算")
 st.caption("销售报价与利润核算")
 
 # -----------------------------
-# 基础输入
+# 基础输入（单列，手机更整洁）
 # -----------------------------
 st.markdown("##### 基础信息")
 
-col1, col2 = st.columns(2)
-
-with col1:
-    category = st.selectbox("品种", ["珐琅", "素金", "钻石"])
-    weight = st.number_input("克重（g）", min_value=0.0, value=1.0, step=0.01)
-    sale_gold_price_per_g = st.number_input("销售金价 / 克（元）", min_value=0.0, value=800.0, step=1.0)
-
-with col2:
-    cost_gold_price_per_g = st.number_input("成本金价 / 克（元）", min_value=0.0, value=700.0, step=1.0)
-    st.caption("税率：8%（固定）")
+category = st.selectbox("品种", ["珐琅", "素金", "钻石"])
+weight = st.number_input("克重（g）", min_value=0.0, value=1.0, step=0.01)
+sale_gold_price_per_g = st.number_input("销售金价 / 克（元）", min_value=0.0, value=800.0, step=1.0)
+cost_gold_price_per_g = st.number_input("成本金价 / 克（元）", min_value=0.0, value=700.0, step=1.0)
+st.caption("税率：8%（固定）")
 
 sale_labor_per_g = CRAFT_OPTIONS[category]
 
 st.markdown("##### 配件选择")
 
-col3, col4 = st.columns(2)
-
-with col3:
-    use_silver_chain = st.checkbox("银链", value=False)
-
-with col4:
-    use_braided_rope = st.checkbox("编绳", value=False)
+use_silver_chain = st.checkbox("银链", value=False)
+use_braided_rope = st.checkbox("编绳", value=False)
 
 braid_cost = 0
 braid_sale = 0
@@ -131,7 +169,6 @@ cost_gold_total = cost_gold_price_per_g * weight
 sale_labor_total = sale_labor_per_g * weight
 cost_labor_total = COST_LABOR_PER_G * weight
 
-# 未税销售合计
 untaxed_sale_total = (
     sale_gold_total
     + sale_labor_total
@@ -141,13 +178,9 @@ untaxed_sale_total = (
     + braid_sale
 )
 
-# 税费
 tax_fee = untaxed_sale_total * tax_rate
-
-# 总销售价（含税）
 customer_total_payment = untaxed_sale_total + tax_fee
 
-# 原始成本（未加税）
 base_cost = (
     cost_gold_total
     + cost_labor_total
@@ -157,10 +190,7 @@ base_cost = (
     + braid_cost
 )
 
-# 总成本（口径B：加税）
 total_cost = base_cost + tax_fee
-
-# 利润与利润率（口径B）
 profit = customer_total_payment - total_cost
 profit_rate = 0 if total_cost == 0 else profit / total_cost
 
@@ -209,50 +239,41 @@ current_detail_record = {
 st.markdown("---")
 st.markdown("##### 核算结果")
 
-m1, m2, m3 = st.columns(3)
-m1.metric("利润", f"¥ {profit:.2f}")
-m2.metric("利润率", f"{profit_rate:.2%}")
-m3.metric("总销售价", f"¥ {customer_total_payment:.2f}")
+m1, m2 = st.columns(2)
+with m1:
+    st.metric("利润", f"¥ {profit:.2f}")
+    st.metric("总成本", f"¥ {total_cost:.2f}")
+with m2:
+    st.metric("利润率", f"{profit_rate:.2%}")
+    st.metric("总销售价", f"¥ {customer_total_payment:.2f}")
 
 st.markdown("##### 核心明细")
-
-c1, c2 = st.columns(2)
-
-with c1:
-    st.write(f"未税销售合计：¥ {untaxed_sale_total:.2f}")
-    st.write(f"税费：¥ {tax_fee:.2f}")
-    st.write(f"总销售价：¥ {customer_total_payment:.2f}")
-
-with c2:
-    st.write(f"原始成本：¥ {base_cost:.2f}")
-    st.write(f"总成本：¥ {total_cost:.2f}")
-    st.caption(f"销售手工费 / 克：¥ {sale_labor_per_g:.2f}")
+st.write(f"未税销售合计：¥ {untaxed_sale_total:.2f}")
+st.write(f"税费：¥ {tax_fee:.2f}")
+st.write(f"原始成本：¥ {base_cost:.2f}")
+st.caption(f"销售手工费 / 克：¥ {sale_labor_per_g:.2f}")
 
 # -----------------------------
 # 保存当前结果
 # -----------------------------
-btn1, btn2 = st.columns(2)
+if st.button("保存本次结果", use_container_width=True):
+    summary_record = {"序号": len(st.session_state.summary_history) + 1, **current_summary_record}
+    detail_record = {"序号": len(st.session_state.detail_history) + 1, **current_detail_record}
 
-with btn1:
-    if st.button("保存本次结果", use_container_width=True):
-        summary_record = {"序号": len(st.session_state.summary_history) + 1, **current_summary_record}
-        detail_record = {"序号": len(st.session_state.detail_history) + 1, **current_detail_record}
+    st.session_state.summary_history.append(summary_record)
+    st.session_state.detail_history.append(detail_record)
 
-        st.session_state.summary_history.append(summary_record)
-        st.session_state.detail_history.append(detail_record)
+    save_json_file(SUMMARY_HISTORY_FILE, st.session_state.summary_history)
+    save_json_file(DETAIL_HISTORY_FILE, st.session_state.detail_history)
 
-        save_json_file(SUMMARY_HISTORY_FILE, st.session_state.summary_history)
-        save_json_file(DETAIL_HISTORY_FILE, st.session_state.detail_history)
+    st.success("已保存本次结果和详细拆分")
 
-        st.success("已保存本次结果和详细拆分")
-
-with btn2:
-    if st.button("清空全部记录", use_container_width=True):
-        st.session_state.summary_history = []
-        st.session_state.detail_history = []
-        save_json_file(SUMMARY_HISTORY_FILE, st.session_state.summary_history)
-        save_json_file(DETAIL_HISTORY_FILE, st.session_state.detail_history)
-        st.success("全部记录已清空")
+if st.button("清空全部记录", use_container_width=True):
+    st.session_state.summary_history = []
+    st.session_state.detail_history = []
+    save_json_file(SUMMARY_HISTORY_FILE, st.session_state.summary_history)
+    save_json_file(DETAIL_HISTORY_FILE, st.session_state.detail_history)
+    st.success("全部记录已清空")
 
 # -----------------------------
 # 历史记录（简版）
@@ -272,65 +293,56 @@ with st.expander("查看历史记录"):
             use_container_width=True
         )
 
-        delete_col1, delete_col2 = st.columns([2, 1])
-        with delete_col1:
-            delete_summary_id = st.selectbox(
-                "选择要删除的历史记录序号",
-                options=[row["序号"] for row in st.session_state.summary_history],
-                key="delete_summary_id"
-            )
-        with delete_col2:
-            st.write("")
-            st.write("")
-            if st.button("删除该条历史记录", use_container_width=True):
-                st.session_state.summary_history = [
-                    row for row in st.session_state.summary_history
-                    if row["序号"] != delete_summary_id
-                ]
-                st.session_state.summary_history = resequence(st.session_state.summary_history)
-                save_json_file(SUMMARY_HISTORY_FILE, st.session_state.summary_history)
-                st.success(f"已删除历史记录第 {delete_summary_id} 条")
-                st.rerun()
+        delete_summary_id = st.selectbox(
+            "选择要删除的历史记录序号",
+            options=[row["序号"] for row in st.session_state.summary_history],
+            key="delete_summary_id"
+        )
+        if st.button("删除该条历史记录", use_container_width=True):
+            st.session_state.summary_history = [
+                row for row in st.session_state.summary_history
+                if row["序号"] != delete_summary_id
+            ]
+            st.session_state.summary_history = resequence(st.session_state.summary_history)
+            save_json_file(SUMMARY_HISTORY_FILE, st.session_state.summary_history)
+            st.success(f"已删除历史记录第 {delete_summary_id} 条")
+            st.rerun()
     else:
         st.caption("暂无保存记录")
 
 # -----------------------------
-# 当前详细拆分（当前结果）
+# 当前详细拆分
 # -----------------------------
 with st.expander("查看当前详细拆分"):
-    left, right = st.columns(2)
+    st.markdown("**销售端**")
+    st.write(f"销售金价总额：¥ {sale_gold_price_per_g:.2f} × {weight:.2f} = ¥ {sale_gold_total:.2f}")
+    st.write(f"销售手工费总额：¥ {sale_labor_per_g:.2f} × {weight:.2f} = ¥ {sale_labor_total:.2f}")
+    st.write(f"销售运费：¥ {SALES_SHIPPING:.2f}")
+    st.write(f"证书销售费：¥ {SALES_CERT_FEE:.2f}")
+    st.write(f"银链售价：¥ {silver_chain_sale:.2f}")
+    st.write(f"编绳售价：¥ {braid_sale:.2f}")
+    st.write(
+        f"未税销售合计：¥ {sale_gold_total:.2f} + ¥ {sale_labor_total:.2f} + "
+        f"¥ {SALES_SHIPPING:.2f} + ¥ {SALES_CERT_FEE:.2f} + "
+        f"¥ {silver_chain_sale:.2f} + ¥ {braid_sale:.2f} = ¥ {untaxed_sale_total:.2f}"
+    )
+    st.write(f"税费：¥ {untaxed_sale_total:.2f} × {tax_rate_percent:.2f}% = ¥ {tax_fee:.2f}")
+    st.write(f"总销售价：¥ {untaxed_sale_total:.2f} + ¥ {tax_fee:.2f} = ¥ {customer_total_payment:.2f}")
 
-    with left:
-        st.markdown("**销售端**")
-        st.write(f"销售金价总额：¥ {sale_gold_price_per_g:.2f} × {weight:.2f} = ¥ {sale_gold_total:.2f}")
-        st.write(f"销售手工费总额：¥ {sale_labor_per_g:.2f} × {weight:.2f} = ¥ {sale_labor_total:.2f}")
-        st.write(f"销售运费：¥ {SALES_SHIPPING:.2f}")
-        st.write(f"证书销售费：¥ {SALES_CERT_FEE:.2f}")
-        st.write(f"银链售价：¥ {silver_chain_sale:.2f}")
-        st.write(f"编绳售价：¥ {braid_sale:.2f}")
-        st.write(
-            f"未税销售合计：¥ {sale_gold_total:.2f} + ¥ {sale_labor_total:.2f} + "
-            f"¥ {SALES_SHIPPING:.2f} + ¥ {SALES_CERT_FEE:.2f} + "
-            f"¥ {silver_chain_sale:.2f} + ¥ {braid_sale:.2f} = ¥ {untaxed_sale_total:.2f}"
-        )
-        st.write(f"税费：¥ {untaxed_sale_total:.2f} × {tax_rate_percent:.2f}% = ¥ {tax_fee:.2f}")
-        st.write(f"总销售价：¥ {untaxed_sale_total:.2f} + ¥ {tax_fee:.2f} = ¥ {customer_total_payment:.2f}")
-
-    with right:
-        st.markdown("**成本端**")
-        st.write(f"成本金价总额：¥ {cost_gold_price_per_g:.2f} × {weight:.2f} = ¥ {cost_gold_total:.2f}")
-        st.write(f"成本手工费总额：¥ {COST_LABOR_PER_G:.2f} × {weight:.2f} = ¥ {cost_labor_total:.2f}")
-        st.write(f"运费成本：¥ {COST_SHIPPING:.2f}")
-        st.write(f"证书成本：¥ {COST_CERT_FEE:.2f}")
-        st.write(f"银链成本：¥ {silver_chain_cost:.2f}")
-        st.write(f"编绳成本：¥ {braid_cost:.2f}")
-        st.write(
-            f"原始成本：¥ {cost_gold_total:.2f} + ¥ {cost_labor_total:.2f} + "
-            f"¥ {COST_SHIPPING:.2f} + ¥ {COST_CERT_FEE:.2f} + "
-            f"¥ {silver_chain_cost:.2f} + ¥ {braid_cost:.2f} = ¥ {base_cost:.2f}"
-        )
-        st.write(f"税费：¥ {tax_fee:.2f}")
-        st.write(f"总成本：¥ {base_cost:.2f} + ¥ {tax_fee:.2f} = ¥ {total_cost:.2f}")
+    st.markdown("**成本端**")
+    st.write(f"成本金价总额：¥ {cost_gold_price_per_g:.2f} × {weight:.2f} = ¥ {cost_gold_total:.2f}")
+    st.write(f"成本手工费总额：¥ {COST_LABOR_PER_G:.2f} × {weight:.2f} = ¥ {cost_labor_total:.2f}")
+    st.write(f"运费成本：¥ {COST_SHIPPING:.2f}")
+    st.write(f"证书成本：¥ {COST_CERT_FEE:.2f}")
+    st.write(f"银链成本：¥ {silver_chain_cost:.2f}")
+    st.write(f"编绳成本：¥ {braid_cost:.2f}")
+    st.write(
+        f"原始成本：¥ {cost_gold_total:.2f} + ¥ {cost_labor_total:.2f} + "
+        f"¥ {COST_SHIPPING:.2f} + ¥ {COST_CERT_FEE:.2f} + "
+        f"¥ {silver_chain_cost:.2f} + ¥ {braid_cost:.2f} = ¥ {base_cost:.2f}"
+    )
+    st.write(f"税费：¥ {tax_fee:.2f}")
+    st.write(f"总成本：¥ {base_cost:.2f} + ¥ {tax_fee:.2f} = ¥ {total_cost:.2f}")
 
 # -----------------------------
 # 详细拆分记录（历史）
@@ -350,25 +362,20 @@ with st.expander("查看详细拆分记录"):
             use_container_width=True
         )
 
-        dcol1, dcol2 = st.columns([2, 1])
-        with dcol1:
-            delete_detail_id = st.selectbox(
-                "选择要删除的详细记录序号",
-                options=[row["序号"] for row in st.session_state.detail_history],
-                key="delete_detail_id"
-            )
-        with dcol2:
-            st.write("")
-            st.write("")
-            if st.button("删除该条详细记录", use_container_width=True):
-                st.session_state.detail_history = [
-                    row for row in st.session_state.detail_history
-                    if row["序号"] != delete_detail_id
-                ]
-                st.session_state.detail_history = resequence(st.session_state.detail_history)
-                save_json_file(DETAIL_HISTORY_FILE, st.session_state.detail_history)
-                st.success(f"已删除详细记录第 {delete_detail_id} 条")
-                st.rerun()
+        delete_detail_id = st.selectbox(
+            "选择要删除的详细记录序号",
+            options=[row["序号"] for row in st.session_state.detail_history],
+            key="delete_detail_id"
+        )
+        if st.button("删除该条详细记录", use_container_width=True):
+            st.session_state.detail_history = [
+                row for row in st.session_state.detail_history
+                if row["序号"] != delete_detail_id
+            ]
+            st.session_state.detail_history = resequence(st.session_state.detail_history)
+            save_json_file(DETAIL_HISTORY_FILE, st.session_state.detail_history)
+            st.success(f"已删除详细记录第 {delete_detail_id} 条")
+            st.rerun()
     else:
         st.caption("暂无详细记录")
 
